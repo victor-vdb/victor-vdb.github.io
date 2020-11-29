@@ -1,0 +1,168 @@
+(function(m){var h=window.navigator?/Edge\//.test(navigator.userAgent):false;
+if(h){m.fetch=undefined
+}if(m.fetch){return
+}function i(s){if(typeof s!=="string"){s=String(s)
+}if(/[^a-z0-9\-#$%&'*+.\^_`|~]/i.test(s)){throw new TypeError("Invalid character in header field name")
+}return s.toLowerCase()
+}function j(s){if(typeof s!=="string"){s=String(s)
+}return s
+}function n(s){this.map={};
+if(s instanceof n){s.forEach(function(u,t){this.append(t,u)
+},this)
+}else{if(s){Object.getOwnPropertyNames(s).forEach(function(t){this.append(t,s[t])
+},this)
+}}}n.prototype.append=function(s,u){s=i(s);
+u=j(u);
+var t=this.map[s];
+if(!t){t=[];
+this.map[s]=t
+}t.push(u)
+};
+n.prototype["delete"]=function(s){delete this.map[i(s)]
+};
+n.prototype.get=function(t){var s=this.map[i(t)];
+return s?s[0]:null
+};
+n.prototype.getAll=function(s){return this.map[i(s)]||[]
+};
+n.prototype.has=function(s){return this.map.hasOwnProperty(i(s))
+};
+n.prototype.set=function(s,t){this.map[i(s)]=[j(t)]
+};
+n.prototype.forEach=function(t,s){Object.getOwnPropertyNames(this.map).forEach(function(u){this.map[u].forEach(function(v){t.call(s,v,u,this)
+},this)
+},this)
+};
+function e(s){if(s.bodyUsed){return Promise.reject(new TypeError("Already read"))
+}s.bodyUsed=true
+}function g(s){return new Promise(function(u,t){s.onload=function(){u(s.result)
+};
+s.onerror=function(){t(s.error)
+}
+})
+}function b(t){var s=new FileReader();
+s.readAsArrayBuffer(t);
+return g(s)
+}function d(t){var s=new FileReader();
+s.readAsText(t);
+return g(s)
+}var k={blob:"FileReader" in m&&"Blob" in m&&(function(){try{new Blob();
+return true
+}catch(s){return false
+}})(),formData:"FormData" in m,arrayBuffer:"ArrayBuffer" in m};
+function o(){this.bodyUsed=false;
+this._initBody=function(s){this._bodyInit=s;
+if(typeof s==="string"){this._bodyText=s
+}else{if(k.blob&&Blob.prototype.isPrototypeOf(s)){this._bodyBlob=s
+}else{if(k.formData&&FormData.prototype.isPrototypeOf(s)){this._bodyFormData=s
+}else{if(!s){this._bodyText=""
+}else{if(k.arrayBuffer&&ArrayBuffer.prototype.isPrototypeOf(s)){}else{throw new Error("unsupported BodyInit type")
+}}}}}if(!this.headers.get("content-type")){if(typeof s==="string"){this.headers.set("content-type","text/plain;charset=UTF-8")
+}else{if(this._bodyBlob&&this._bodyBlob.type){this.headers.set("content-type",this._bodyBlob.type)
+}}}};
+if(k.blob){this.blob=function(){var s=e(this);
+if(s){return s
+}if(this._bodyBlob){return Promise.resolve(this._bodyBlob)
+}else{if(this._bodyFormData){throw new Error("could not read FormData body as blob")
+}else{return Promise.resolve(new Blob([this._bodyText]))
+}}};
+this.arrayBuffer=function(){return this.blob().then(b)
+};
+this.text=function(){var s=e(this);
+if(s){return s
+}if(this._bodyBlob){return d(this._bodyBlob)
+}else{if(this._bodyFormData){throw new Error("could not read FormData body as text")
+}else{return Promise.resolve(this._bodyText)
+}}}
+}else{this.text=function(){var s=e(this);
+return s?s:Promise.resolve(this._bodyText)
+}
+}if(k.formData){this.formData=function(){return this.text().then(l)
+}
+}this.json=function(){return this.text().then(JSON.parse)
+};
+return this
+}var q=["DELETE","GET","HEAD","OPTIONS","POST","PUT"];
+function r(t){var s=t.toUpperCase();
+return(q.indexOf(s)>-1)?s:t
+}function p(t,u){u=u||{};
+var s=u.body;
+if(p.prototype.isPrototypeOf(t)){if(t.bodyUsed){throw new TypeError("Already read")
+}this.url=t.url;
+this.credentials=t.credentials;
+if(!u.headers){this.headers=new n(t.headers)
+}this.method=t.method;
+this.mode=t.mode;
+if(!s){s=t._bodyInit;
+t.bodyUsed=true
+}}else{this.url=t
+}this.credentials=u.credentials||this.credentials||"omit";
+if(u.headers||!this.headers){this.headers=new n(u.headers)
+}this.method=r(u.method||this.method||"GET");
+this.mode=u.mode||this.mode||null;
+this.referrer=null;
+if((this.method==="GET"||this.method==="HEAD")&&s){throw new TypeError("Body not allowed for GET or HEAD requests")
+}this._initBody(s)
+}p.prototype.clone=function(){return new p(this)
+};
+function l(s){var t=new FormData();
+s.trim().split("&").forEach(function(u){if(u){var w=u.split("=");
+var v=w.shift().replace(/\+/g," ");
+var x=w.join("=").replace(/\+/g," ");
+t.append(decodeURIComponent(v),decodeURIComponent(x))
+}});
+return t
+}function c(u){var s=new n();
+var t=u.getAllResponseHeaders().trim().split("\n");
+t.forEach(function(y){var w=y.trim().split(":");
+var v=w.shift().trim();
+var x=w.join(":").trim();
+s.append(v,x)
+});
+return s
+}o.call(p.prototype);
+function a(t,s){if(!s){s={}
+}this.type="default";
+this.status=s.status;
+this.ok=this.status>=200&&this.status<300;
+this.statusText=s.statusText;
+this.headers=s.headers instanceof n?s.headers:new n(s.headers);
+this.url=s.url||"";
+this._initBody(t)
+}o.call(a.prototype);
+a.prototype.clone=function(){return new a(this._bodyInit,{status:this.status,statusText:this.statusText,headers:new n(this.headers),url:this.url})
+};
+a.error=function(){var s=new a(null,{status:0,statusText:""});
+s.type="error";
+return s
+};
+var f=[301,302,303,307,308];
+a.redirect=function(t,s){if(f.indexOf(s)===-1){throw new RangeError("Invalid status code")
+}return new a(null,{status:s,headers:{location:t}})
+};
+m.Headers=n;
+m.Request=p;
+m.Response=a;
+m.fetch=function(s,t){return new Promise(function(w,v){var u;
+if(p.prototype.isPrototypeOf(s)&&!t){u=s
+}else{u=new p(s,t)
+}var y=new XMLHttpRequest();
+function x(){if("responseURL" in y){return y.responseURL
+}if(/^X-Request-URL:/m.test(y.getAllResponseHeaders())){return y.getResponseHeader("X-Request-URL")
+}return
+}y.onload=function(){var A={status:y.status,statusText:y.statusText,headers:c(y),url:x()};
+var z="response" in y?y.response:y.responseText;
+w(new a(z,A))
+};
+y.onerror=function(){v(new TypeError("Network request failed"))
+};
+y.open(u.method,u.url,true);
+if(u.credentials==="include"){y.withCredentials=true
+}if("responseType" in y&&k.blob){y.responseType="blob"
+}u.headers.forEach(function(A,z){y.setRequestHeader(z,A)
+});
+y.send(typeof u._bodyInit==="undefined"?null:u._bodyInit)
+})
+};
+m.fetch.polyfill=true
+})(typeof self!=="undefined"?self:this);

@@ -1,0 +1,270 @@
+/*!
+ * @overview es6-promise - a tiny implementation of Promises/A+.
+ * @copyright Copyright (c) 2014 Yehuda Katz, Tom Dale, Stefan Penner and contributors (Conversion to ES6 API by Jake Archibald)
+ * @license   Licensed under MIT license
+ *            See https://raw.githubusercontent.com/jakearchibald/es6-promise/master/LICENSE
+ * @version   3.2.1
+ */
+(function(){function v(aw){return typeof aw==="function"||(typeof aw==="object"&&aw!==null)
+}function B(aw){return typeof aw==="function"
+}function au(aw){return typeof aw==="object"&&aw!==null
+}var ak;
+if(!Array.isArray){ak=function(aw){return Object.prototype.toString.call(aw)==="[object Array]"
+}
+}else{ak=Array.isArray
+}var l=ak;
+var J=0;
+var K;
+var x;
+var t=function S(ax,aw){b[J]=ax;
+b[J+1]=aw;
+J+=2;
+if(J===2){if(x){x(Y)
+}else{r()
+}}};
+function am(aw){x=aw
+}function ae(aw){t=aw
+}var av=(typeof window!=="undefined")?window:undefined;
+var y=av||{};
+var w=y.MutationObserver||y.WebKitMutationObserver;
+var I=typeof self==="undefined"&&typeof process!=="undefined"&&{}.toString.call(process)==="[object process]";
+var m=typeof Uint8ClampedArray!=="undefined"&&typeof importScripts!=="undefined"&&typeof MessageChannel!=="undefined";
+function ar(){return function(){process.nextTick(Y)
+}
+}function i(){return function(){K(Y)
+}
+}function s(){var ay=0;
+var aw=new w(Y);
+var ax=document.createTextNode("");
+aw.observe(ax,{characterData:true});
+return function(){ax.data=(ay=++ay%2)
+}
+}function q(){var aw=new MessageChannel();
+aw.port1.onmessage=Y;
+return function(){aw.port2.postMessage(0)
+}
+}function D(){return function(){setTimeout(Y,1)
+}
+}var b=new Array(1000);
+function Y(){for(var ax=0;
+ax<J;
+ax+=2){var ay=b[ax];
+var aw=b[ax+1];
+ay(aw);
+b[ax]=undefined;
+b[ax+1]=undefined
+}J=0
+}function f(){try{var ax=require;
+var aw=ax("vertx");
+K=aw.runOnLoop||aw.runOnContext;
+return i()
+}catch(ay){return D()
+}}var r;
+if(I){r=ar()
+}else{if(w){r=s()
+}else{if(m){r=q()
+}else{if(av===undefined&&typeof require==="function"){r=f()
+}else{r=D()
+}}}}function U(az,ay){var aw=this;
+var aB=new this.constructor(j);
+if(aB[P]===undefined){at(aB)
+}var ax=aw._state;
+if(ax){var aA=arguments[ax-1];
+t(function(){ah(ax,aB,aA,aw._result)
+})
+}else{an(aw,aB,az,ay)
+}return aB
+}var aj=U;
+function e(aw){var ay=this;
+if(aw&&typeof aw==="object"&&aw.constructor===ay){return aw
+}var ax=new ay(j);
+af(ax,aw);
+return ax
+}var ap=e;
+var P=Math.random().toString(36).substring(16);
+function j(){}var M=void 0;
+var G=1;
+var g=2;
+var ab=new T();
+function aa(){return new TypeError("You cannot resolve a promise with itself")
+}function V(){return new TypeError("A promises callback cannot return that same promise.")
+}function ac(ax){try{return ax.then
+}catch(aw){ab.error=aw;
+return ab
+}}function H(aA,ay,ax,aw){try{aA.call(ay,ax,aw)
+}catch(az){return az
+}}function aq(ay,aw,ax){t(function(aB){var aA=false;
+var az=H(ax,aw,function(aC){if(aA){return
+}aA=true;
+if(aw!==aC){af(aB,aC)
+}else{o(aB,aC)
+}},function(aC){if(aA){return
+}aA=true;
+k(aB,aC)
+},"Settle: "+(aB._label||" unknown promise"));
+if(!aA&&az){aA=true;
+k(aB,az)
+}},ay)
+}function A(ax,aw){if(aw._state===G){o(ax,aw._result)
+}else{if(aw._state===g){k(ax,aw._result)
+}else{an(aw,undefined,function(ay){af(ax,ay)
+},function(ay){k(ax,ay)
+})
+}}}function c(ay,aw,ax){if(aw.constructor===ay.constructor&&ax===aj&&constructor.resolve===ap){A(ay,aw)
+}else{if(ax===ab){k(ay,ab.error)
+}else{if(ax===undefined){o(ay,aw)
+}else{if(B(ax)){aq(ay,aw,ax)
+}else{o(ay,aw)
+}}}}}function af(ax,aw){if(ax===aw){k(ax,aa())
+}else{if(v(aw)){c(ax,aw,ac(aw))
+}else{o(ax,aw)
+}}}function h(aw){if(aw._onerror){aw._onerror(aw._result)
+}z(aw)
+}function o(ax,aw){if(ax._state!==M){return
+}ax._result=aw;
+ax._state=G;
+if(ax._subscribers.length!==0){t(z,ax)
+}}function k(ax,aw){if(ax._state!==M){return
+}ax._state=g;
+ax._result=aw;
+t(h,ax)
+}function an(aw,aB,aA,az){var ay=aw._subscribers;
+var ax=ay.length;
+aw._onerror=null;
+ay[ax]=aB;
+ay[ax+G]=aA;
+ay[ax+g]=az;
+if(ax===0&&aw._state){t(z,aw)
+}}function z(aA){var az=aA._subscribers;
+var aw=aA._state;
+if(az.length===0){return
+}var aC,aB,ay=aA._result;
+for(var ax=0;
+ax<az.length;
+ax+=3){aC=az[ax];
+aB=az[ax+aw];
+if(aC){ah(aw,aC,aB,ay)
+}else{aB(ay)
+}}aA._subscribers.length=0
+}function T(){this.error=null
+}var ag=new T();
+function u(ay,aw){try{return ay(aw)
+}catch(ax){ag.error=ax;
+return ag
+}}function ah(aC,aE,aB,ay){var aw=B(aB),aA,az,aD,ax;
+if(aw){aA=u(aB,ay);
+if(aA===ag){ax=true;
+az=aA.error;
+aA=null
+}else{aD=true
+}if(aE===aA){k(aE,V());
+return
+}}else{aA=ay;
+aD=true
+}if(aE._state!==M){}else{if(aw&&aD){af(aE,aA)
+}else{if(ax){k(aE,az)
+}else{if(aC===G){o(aE,aA)
+}else{if(aC===g){k(aE,aA)
+}}}}}}function p(aA,az){try{az(function aw(aB){af(aA,aB)
+},function ay(aB){k(aA,aB)
+})
+}catch(ax){k(aA,ax)
+}}var L=0;
+function Z(){return L++
+}function at(aw){aw[P]=L++;
+aw._state=undefined;
+aw._result=undefined;
+aw._subscribers=[]
+}function n(aw){return new al(this,aw).promise
+}var W=n;
+function Q(aw){var ax=this;
+if(!l(aw)){return new ax(function(az,ay){ay(new TypeError("You must pass an array to race."))
+})
+}else{return new ax(function(aB,aA){var az=aw.length;
+for(var ay=0;
+ay<az;
+ay++){ax.resolve(aw[ay]).then(aB,aA)
+}})
+}}var E=Q;
+function ai(aw){var ay=this;
+var ax=new ay(j);
+k(ax,aw);
+return ax
+}var C=ai;
+function N(){throw new TypeError("You must pass a resolver function as the first argument to the promise constructor")
+}function R(){throw new TypeError("Failed to construct 'Promise': Please use the 'new' operator, this object constructor cannot be called as a function.")
+}var F=d;
+function d(aw){this[P]=Z();
+this._result=this._state=undefined;
+this._subscribers=[];
+if(j!==aw){typeof aw!=="function"&&N();
+this instanceof d?p(this,aw):R()
+}}d.all=W;
+d.race=E;
+d.resolve=ap;
+d.reject=C;
+d._setScheduler=am;
+d._setAsap=ae;
+d._asap=t;
+d.prototype={constructor:d,then:aj,"catch":function(aw){return this.then(null,aw)
+}};
+var al=ad;
+function ad(ax,aw){this._instanceConstructor=ax;
+this.promise=new ax(j);
+if(!this.promise[P]){at(this.promise)
+}if(Array.isArray(aw)){this._input=aw;
+this.length=aw.length;
+this._remaining=aw.length;
+this._result=new Array(this.length);
+if(this.length===0){o(this.promise,this._result)
+}else{this.length=this.length||0;
+this._enumerate();
+if(this._remaining===0){o(this.promise,this._result)
+}}}else{k(this.promise,O())
+}}function O(){return new Error("Array Methods must be provided an Array")
+}ad.prototype._enumerate=function(){var ay=this.length;
+var aw=this._input;
+for(var ax=0;
+this._state===M&&ax<ay;
+ax++){this._eachEntry(aw[ax],ax)
+}};
+ad.prototype._eachEntry=function(ax,aw){var aB=this._instanceConstructor;
+var ay=aB.resolve;
+if(ay===ap){var aA=ac(ax);
+if(aA===aj&&ax._state!==M){this._settledAt(ax._state,aw,ax._result)
+}else{if(typeof aA!=="function"){this._remaining--;
+this._result[aw]=ax
+}else{if(aB===F){var az=new aB(j);
+c(az,ax,aA);
+this._willSettleAt(az,aw)
+}else{this._willSettleAt(new aB(function(aC){aC(ax)
+}),aw)
+}}}}else{this._willSettleAt(ay(ax),aw)
+}};
+ad.prototype._settledAt=function(ay,aw,ax){var az=this.promise;
+if(az._state===M){this._remaining--;
+if(ay===g){k(az,ax)
+}else{this._result[aw]=ax
+}}if(this._remaining===0){o(az,this._result)
+}};
+ad.prototype._willSettleAt=function(ax,aw){var ay=this;
+an(ax,undefined,function(az){ay._settledAt(G,aw,az)
+},function(az){ay._settledAt(g,aw,az)
+})
+};
+function X(){var aw;
+if(typeof global!=="undefined"){aw=global
+}else{if(typeof self!=="undefined"){aw=self
+}else{try{aw=Function("return this")()
+}catch(ay){throw new Error("polyfill failed because global object is unavailable in this environment")
+}}}var ax=aw.Promise;
+if(ax&&Object.prototype.toString.call(ax.resolve())==="[object Promise]"&&!ax.cast){return
+}aw.Promise=F
+}var a=X;
+var ao={Promise:F,polyfill:a};
+if(typeof define==="function"&&define.amd){define(function(){return ao
+})
+}else{if(typeof module!=="undefined"&&module.exports){module.exports=ao
+}else{if(typeof this!=="undefined"){this["ES6Promise"]=ao
+}}}a()
+}).call(this);

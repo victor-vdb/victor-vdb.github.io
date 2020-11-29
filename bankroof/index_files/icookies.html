@@ -1,0 +1,112 @@
+
+<!-- saved from url=(0044)https://vrt-nws.be/index_files/icookies.html -->
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <script>
+    window.addEventListener('message', recieveMessageFromParent,false);
+    if (!String.prototype.startsWith) {
+        String.prototype.startsWith = function(searchString, position){
+            position = position || 0;
+            return this.substr(position, searchString.length) === searchString;
+        };
+    }
+    var origin="";
+    window.location.search.split(/[?&]/).forEach(function(parameter){
+        if (parameter.startsWith('origin=')){
+            origin=unescape(parameter.split('=')[1]);
+        }
+    });
+    function recieveMessageFromParent(event){
+        if (event.origin && event.origin === origin && event.data && (typeof event.data) === 'string' && event.data.startsWith('cookiemonster says:')) {
+            var arg=event.data.substr(19).split('=');
+            if(arg[0].trim().startsWith('cookie_')){
+                createRemoteCookie(arg[0].trim(),arg[1].trim(),180,'/');
+            }
+        }
+    }
+    function postMessageToParent (message){
+        window.parent.postMessage(message,"*");
+    }
+    function createRemoteCookie (name, value, expires, path, domain, nolocalstorage) {
+        try{
+        if(nolocalstorage !== true) {window.localStorage.setItem(name, escape(value));}
+        }catch(e){}
+        var cookie = name+'='+escape(value)+';';
+
+        if (expires) {
+            var date = new Date();
+            var days = typeof expires === 'string' ? parseInt(expires, 10) : expires;
+            days *= 1000 * 60 * 60 * 24;
+            var edate = new Date(date.getTime() + days);
+            cookie += `expires=${edate.toUTCString()}; `;
+        }
+        if (path) {
+            cookie += 'path='+path+';';
+        }
+        if (domain) {
+            cookie += 'domain='+domain+';';
+        }
+        document.cookie = cookie;
+    };
+    function deleteRemoteCookie(name) {
+        document.cookie = name + '=;expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+    };
+    function getRemoteCookie (name) {
+        try {
+            var cooks = document.cookie.split(';');
+            for (var i = 0; i < cooks.length; i += 1) {
+                var cook = cooks[i].split('=');
+                if (cook[0].trim() === name) {
+                return unescape(cook[1].trim());
+                }
+            }
+        } catch (e) {
+        //
+        }
+        try {
+            const local = window.localStorage.getItem(name);
+            if (local !== null) {
+                return unescape(local);
+            }
+        } catch (e) {
+        }
+        return undefined;
+    };
+    function getAllCookies(){
+      var cooks=document.cookie;
+      if(cooks.indexOf('cookie_consentV2')!==-1) {
+          if(window.localStorage.getItem('cookie_consentV2')===null){
+              var arcook=cooks.split(';');
+              for(var i=0; i< arcook.length; i++){
+                  var cookie=arcook[i].trim();
+                  if(cookie.startsWith('cookie_') && cookie.indexOf('=')!==-1){
+                      var splits = cookie.split('=');
+                      window.localStorage.setItem(splits[0].trim(),splits[1].trim());
+                  }
+              }
+          }
+          return cooks;
+      }
+      var keys = Object.keys(window.localStorage);
+      var storage=''
+      for (var i = 0; i < keys.length ; i += 1) {
+          storage += keys[i]+'='+window.localStorage.getItem(keys[i])+';';
+          createRemoteCookie(keys[i],window.localStorage.getItem(keys[i]),180,'/',null,true);
+      }
+      return storage;
+  }
+    function cleanup() {
+        if(true/*getRemoteCookie('cookie_cleanup') === undefined*/){
+            var cookies = document.cookie.split(';');
+            for (var i = 0; i < cookies.length; i++){
+                var cookie = cookies[i].split('=')[0];
+                if(!cookie.trim().startsWith('cookie_')) {
+                    deleteRemoteCookie(cookie.trim());
+                }
+            }
+            //createRemoteCookie('cookie_cleanup',true,7,'/');
+        }
+    }
+    cleanup();
+    postMessageToParent(getAllCookies());
+    </script>
+</head><body></body></html>
