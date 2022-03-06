@@ -4,7 +4,9 @@
 (function() {
     var b = function() {
         var c = function(d) {
-            return "string" === typeof STATIC_JS_PREFIX ? STATIC_JS_PREFIX + (STATIC_JS_PREFIX.match(/\/$/) ? "" : "/") + d : d
+            var test = "string" === typeof STATIC_JS_PREFIX ? STATIC_JS_PREFIX + (STATIC_JS_PREFIX.match(/\/$/) ? "" : "/") + d : d;
+            console.log(test);
+            return test;
         };
         try {
             if ("undefined" === typeof window.inkLoadWasmModule)
