@@ -1,0 +1,1111 @@
+<!DOCTYPE html>
+<html>
+<!--
+Copyright 2018 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+
+<head>
+    <style type="text/css">
+        body {
+            margin: 0;
+        }
+
+        #ink-canvas {
+            height: 600px;
+            width: 800px;
+        }
+    </style>
+    <link rel="icon" href="data:,"> <!-- Prevent favicon.ico requests -->
+</head>
+
+<body>
+    <h1>Ink demo &mdash; WebAssembly version</h1>
+
+    <div class="VIpgJd-TUo6Hb nA1mMd-L9AdLc-V68bde n9oEIb" tabindex="0" style="left: 0px;top: 0px;/* display: none; */"
+        aria-hidden="false">
+        <div class="nA1mMd-L9AdLc n9oEIb">
+            <div class="nA1mMd-K2TQI ti6hGc" style="display: none;">
+                <div role="button" class="Q0hgme-LgbsSe nA1mMd-K2TQI-LkdAo-LgbsSe nA1mMd-K2TQI-VkLyEc VIpgJd-LgbsSe"
+                    data-tooltip-text="Verwijderen" aria-label="Verwijderen" style="user-select: none;"
+                    aria-disabled="false" tabindex="0">
+                    <div class="nA1mMd-K2TQI-LgbsSe-Bz112c nA1mMd-VkLyEc-Bz112c"></div>
+                </div>
+                <div class="nA1mMd-K2TQI-nK2kYb">
+                    <div role="button" class="Q0hgme-LgbsSe nA1mMd-K2TQI-LgbsSe nA1mMd-K2TQI-MYFTse VIpgJd-LgbsSe"
+                        data-tooltip-text="Vorige" aria-label="Vorige" style="user-select: none;" aria-disabled="false"
+                        tabindex="0">
+                        <div class="nA1mMd-K2TQI-LgbsSe-Bz112c nA1mMd-MYFTse-Bz112c"></div>
+                    </div>
+                    <div class="nA1mMd-K2TQI-fmcmS">Tekening 1/1</div>
+                    <div role="button" class="Q0hgme-LgbsSe nA1mMd-K2TQI-LgbsSe nA1mMd-K2TQI-tJiF1e VIpgJd-LgbsSe"
+                        data-tooltip-text="Volgende" aria-label="Volgende" style="user-select: none;"
+                        aria-disabled="false" tabindex="0">
+                        <div class="nA1mMd-K2TQI-LgbsSe-Bz112c nA1mMd-tJiF1e-Bz112c"></div>
+                    </div>
+                </div>
+                <div role="button" class="Q0hgme-LgbsSe nA1mMd-K2TQI-LkdAo-LgbsSe nA1mMd-K2TQI-RmniWd VIpgJd-LgbsSe"
+                    data-tooltip-text="Nieuw" aria-label="Nieuw" style="user-select: none;" aria-disabled="false"
+                    tabindex="0">
+                    <div class="nA1mMd-K2TQI-LgbsSe-Bz112c nA1mMd-RmniWd-Bz112c"></div>
+                </div>
+            </div>
+            <div class="ink-canvas-parent">
+                <style>
+                    .ink-canvas-parent {
+                        height: 100%;
+                        position: relative;
+                        width: 100%;
+                    }
+
+                    .ink-layer-container {
+                        height: 100%;
+                        position: relative;
+                        width: 100%;
+                    }
+
+                    .ink-engine {
+                        height: 100%;
+                        left: 0;
+                        position: absolute;
+                        top: 0;
+                        width: 100%;
+                        touch-action: none;
+                    }
+
+                    .above-ink-canvas {
+                        display: none;
+                    }
+                </style>
+                <div class="above-ink-canvas">
+                    <div>
+                        <style>
+                            .above-ink-canvas {
+                                display: block;
+                            }
+
+                            .ink-button-container {
+                                vertical-align: middle;
+                                font-family: Roboto, RobotoDraft, Helvetica, Arial, sans-serif;
+                                font-size: 16px;
+                            }
+
+                            .ink-layer-container {
+                                height: calc(100% - 56px);
+                            }
+
+                            .ink-toolbar {
+                                background-color: #ffffff;
+                                border-bottom: 1px solid rgba(0, 0, 0, .24);
+                                box-sizing: border-box;
+                                height: 56px;
+                                padding: 8px 0;
+                                text-align: center;
+                                -webkit-user-select: none;
+                                -moz-user-select: none;
+                                -ms-user-select: none;
+                                user-select: none;
+                                touch-action: none;
+                                position: relative;
+                            }
+
+                            .ink-menu button,
+                            .ink-toolbar button {
+                                outline: unset;
+                                -webkit-tap-highlight-color: transparent;
+                                position: relative;
+                                overflow: hidden;
+                            }
+
+                            .ink-menu .ripple-effect,
+                            .ink-toolbar .ripple-effect {
+                                position: absolute;
+                                border-radius: 50%;
+                                width: 5px;
+                                height: 5px;
+                                background: rgba(0, 0, 0, 0.12);
+                                animation: ink-ripple-animation 0.3s ease-in;
+                            }
+
+                            @keyframes ink-ripple-animation {
+                                from {
+                                    transform: scale(1);
+                                    opacity: (0.4);
+                                }
+
+                                to {
+                                    transform: scale(100);
+                                    opacity: 0;
+                                }
+                            }
+
+                            .ink-toolbar-begin,
+                            .ink-toolbar-end,
+                            .ink-button-container {
+                                display: inline-block;
+                            }
+
+                            .ink-toolbar-begin,
+                            .ink-toolbar-end {
+                                height: 100%;
+                            }
+
+                            .ink-toolbar-begin {
+                                float: left;
+                            }
+
+                            .ink-toolbar-end {
+                                float: right;
+                            }
+
+                            .ink-button-container {
+                                height: 100%;
+                                margin-left: 16px;
+                            }
+
+                            .ink-toolbar-begin .ink-button-container:first-child {
+                                margin-left: 12px;
+                            }
+
+                            .ink-toolbar-end .ink-button-container:last-child {
+                                margin-right: 12px;
+                            }
+
+                            .ink-icon-color {
+                                fill: #424242;
+                            }
+
+                            .ink-toolbar:not(.ink-no-hover) .ink-button-container:hover .ink-icon-color,
+                            .ink-checked .ink-icon-color {
+                                fill: currentColor;
+                            }
+
+                            .ink-show-checked {
+                                display: none;
+                            }
+
+                            .ink-show-unchecked {
+                                display: inline;
+                            }
+
+                            .ink-button-container.ink-checked .ink-show-checked {
+                                display: inline;
+                            }
+
+                            .ink-button-container.ink-checked .ink-show-unchecked {
+                                display: none;
+                            }
+
+                            .ink-button {
+                                background-color: #ffffff;
+                                border: 1px solid #ffffff;
+                                cursor: pointer;
+                                height: 100%;
+                                margin: 0;
+                                padding: 0;
+                            }
+
+                            .ink-button.ink-dropdown {
+                                border-left-width: 0;
+                                width: 18px;
+                            }
+
+                            .ink-icon {
+                                opacity: 0.54;
+                                padding: 8px 7px;
+                            }
+
+                            .ink-arrow-icon {
+                                padding: 8px 0;
+                            }
+
+                            .ink-toolbar:not(.ink-no-hover) .ink-button-container:hover:not(.ink-disabled):not(.ink-no-border) .ink-button,
+                            .ink-toolbar:not(.ink-no-hover) .ink-button-container:not(.ink-disabled):not(.ink-no-border) .ink-button:focus {
+                                border-color: #e5e5e5;
+                            }
+
+                            .ink-toolbar:not(.ink-no-hover) .ink-button-container:hover:not(.ink-disabled) .ink-icon:not(.ink-circle-icon),
+                            .ink-checked .ink-icon {
+                                opacity: 0.87;
+                            }
+
+                            .ink-disabled .ink-button {
+                                cursor: not-allowed;
+                                opacity: 0.26;
+                            }
+
+                            .ink-cap-border {
+                                visibility: hidden;
+                            }
+
+                            .ink-icon-color[color="#fafafa"]+.ink-cap-border {
+                                visibility: visible;
+                            }
+
+                            .below-ink-canvas {
+                                position: absolute;
+                                top: 50px;
+                                width: 100%;
+                            }
+
+                            .ink-menu {
+                                background: #ffffff;
+                                border-radius: 2px;
+                                box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.14), 0 3px 1px -2px rgba(0, 0, 0, 0.2), 0 1px 5px 0 rgba(0, 0, 0, 0.12);
+                                position: absolute;
+                                width: 150px;
+                            }
+
+                            .ink-menu-item {
+                                background-color: #ffffff;
+                                border-color: #ffffff;
+                                border-style: solid;
+                                border-width: 0;
+                                color: #333333;
+                                cursor: pointer;
+                                display: block;
+                                font-family: Roboto, RobotoDraft, Helvetica, Arial, sans-serif;
+                                font-size: 16px;
+                                padding: 8px 0 8px 16px;
+                                text-align: left;
+                                width: 100%;
+                            }
+
+                            .ink-menu-item:hover {
+                                background: #eeeeee;
+                            }
+
+                            .ink-menu-item:first-child {
+                                border-top-width: 8px;
+                            }
+
+                            .ink-menu-item:last-child {
+                                border-bottom-width: 8px;
+                            }
+
+                            .ink-palette {
+                                width: 344px;
+                            }
+
+                            .ink-color-row {
+                                height: 50px;
+                            }
+
+                            .ink-color,
+                            .ink-expand,
+                            .ink-size,
+                            .ink-shape-kind,
+                            .ink-align,
+                            .ink-font,
+                            .ink-shadow-size,
+                            .ink-spacer {
+                                border-color: rgba(0, 0, 0, 0);
+                                border-radius: 50px;
+                                border-style: solid;
+                                border-width: 1px;
+                                height: 20px;
+                                margin: 15px 11px;
+                                padding: 0;
+                                vertical-align: middle;
+                                width: 20px;
+                            }
+
+                            .ink-color {
+                                transition: all 0.3s;
+                            }
+
+                            .ink-color:first-child {
+                                margin-left: 15px;
+                            }
+
+                            .ink-color:hover {
+                                cursor: pointer;
+                                transform: scale(1.3, 1.3);
+                            }
+
+                            .ink-color.ink-selected {
+                                transform: scale(1.6, 1.6);
+                            }
+
+                            .ink-expand {
+                                background-color: #ffffff;
+                                margin-right: 15px;
+                            }
+
+                            .ink-expand:hover {
+                                cursor: pointer;
+                            }
+
+                            .ink-expand .ink-expand-icon {
+                                border-width: 0;
+                                height: 20px;
+                                transition: transform 0.4s;
+                                width: 20px;
+                            }
+
+                            .ink-shape-kind {
+                                background-color: white;
+                                border-radius: 0;
+                                width: 32px;
+                                height: 32px;
+                                margin: 9px 5px;
+                                stroke: black;
+                                stroke-width: 3px;
+                                transition: all 0.2s;
+                            }
+
+                            .ink-shape-kind:first-child {
+                                margin-left: 9px;
+                            }
+
+                            .ink-shape-kind:hover {
+                                stroke-width: 5px;
+                                cursor: pointer;
+                            }
+
+                            .ink-shape-kind.ink-selected {
+                                stroke: #4285f4;
+                                stroke-width: 5px;
+                            }
+
+                            .ink-align {
+                                background-color: #ffffff;
+                                height: 34px;
+                                margin: 8px 4px;
+                                padding: 4px 3px;
+                                width: 34px;
+                            }
+
+                            .ink-align:hover {
+                                border-color: rgba(0, 0, 0, 0.12);
+                                cursor: pointer;
+                            }
+
+                            .ink-align.ink-selected {
+                                border-color: #000000;
+                                fill: #4285f4;
+                            }
+
+                            .ink-font {
+                                background-color: #ffffff;
+                                height: 34px;
+                                margin: 8px 4px;
+                                padding: 4px 3px;
+                                width: 34px;
+                            }
+
+                            .ink-font:hover {
+                                border-color: rgba(0, 0, 0, 0.12);
+                                cursor: pointer;
+                            }
+
+                            .ink-font.ink-selected {
+                                border-color: #000000;
+                                fill: #4285f4;
+                            }
+
+                            .ink-font:first-child {
+                                margin-left: 8px;
+                            }
+
+                            .ink-shadow-size {
+                                background-color: #ffffff;
+                                height: 34px;
+                                margin: 8px 4px;
+                                width: 34px;
+                            }
+
+                            .ink-shadow-size:hover {
+                                border-color: rgba(0, 0, 0, 0.12);
+                                cursor: pointer;
+                            }
+
+                            .ink-shadow-size.ink-selected {
+                                border-color: #000000;
+                            }
+
+                            .ink-shadow-size:first-child {
+                                margin-left: 8px;
+                            }
+
+                            .ink-spacer {
+                                display: inline-block;
+                                width: 18px;
+                            }
+
+                            .ink-palette-expanded .ink-expand-icon {
+                                transform: rotate(180deg);
+                            }
+
+                            .ink-size {
+                                background-color: #ffffff;
+                                height: 34px;
+                                margin: 8px 4px;
+                                width: 34px;
+                            }
+
+                            .ink-size:hover {
+                                border-color: rgba(0, 0, 0, 0.12);
+                                cursor: pointer;
+                            }
+
+                            .ink-size.ink-selected {
+                                border-color: #000000;
+                            }
+
+                            .ink-size:first-child {
+                                margin-left: 8px;
+                            }
+
+                            .ink-size div {
+                                background-color: #000000;
+                                border-radius: 50px;
+                            }
+
+                            .ink-size-row {
+                                border-top: 1px solid #ffffff;
+                            }
+
+                            .ink-palette-expanded .ink-size-row {
+                                border-top: 1px solid rgba(0, 0, 0, 0.12);
+                            }
+
+                            .ink-text-row {
+                                height: 50px;
+                            }
+
+                            .ink-color-rows-container {
+                                overflow: hidden;
+                                transition: height 0.3s cubic-bezier(0.4, 0.0, 0.2, 1) 0s;
+                            }
+
+                            .ink-palette-collapsed .ink-color-rows-container {
+                                height: 50px !important;
+                            }
+
+                            .ink-color[color-data="#fafafa"] {
+                                border-color: #bbbbbb;
+                            }
+
+                            .ink-palette-collapsed .ink-color-row:nth-child(n+2) {
+                                visibility: hidden;
+                            }
+
+                            .ink-circle-icon .ink-icon-color {
+                                fill: currentColor;
+                            }
+
+                            .ink-checked .ink-circle-icon.ink-icon {
+                                opacity: 1;
+                            }
+
+                            .ink-circle-icon.ink-icon {
+                                opacity: 1;
+                                transition: transform 0.3s;
+                            }
+
+                            .ink-checked .ink-circle-icon {
+                                transform: scale(1.6);
+                            }
+
+                            .ink-button-container:not(.ink-checked):hover .ink-circle-icon {
+                                transform: scale(1.3);
+                            }
+
+                            .ink-menu-hidden {
+                                display: none;
+                            }
+
+                            .ink-numeric-input {
+                                margin-left: 3px;
+                                width: 40px;
+                            }
+
+                            .ink-text-input {
+                                margin-left: 3px;
+                            }
+
+                            .ink-search-count {
+                                color: #888;
+                                display: inline-block;
+                                font-family: Roboto, RobotoDraft, Helvetica, Arial, sans-serif;
+                                font-size: 13.3333px;
+                                height: 100%;
+                                margin-left: 8px;
+                            }
+
+                            #ink-snackbar {
+                                visibility: hidden;
+                                min-width: 250px;
+                                background-color: #595959;
+                                color: #ffffff;
+                                text-align: center;
+                                border-radius: 2px;
+                                padding: 16px;
+                                position: fixed;
+                                font-family: Roboto, RobotoDraft, Helvetica, Arial, sans-serif;
+                                left: 50%;
+                                top: 30px;
+                                z-index: 1;
+                            }
+
+                            #ink-snackbar.show {
+                                visibility: visible;
+                                -webkit-animation: fadein 0.5s, fadeout 0.5s 4.75s;
+                                animation: fadein 0.5s, fadeout 0.5s 4.75s;
+                            }
+
+                            @-webkit-keyframes fadein {
+                                from {
+                                    top: 0;
+                                    opacity: 0;
+                                }
+
+                                to {
+                                    top: 30px;
+                                    opacity: 1;
+                                }
+                            }
+
+                            @keyframes fadein {
+                                from {
+                                    top: 0;
+                                    opacity: 0;
+                                }
+
+                                to {
+                                    top: 30px;
+                                    opacity: 1;
+                                }
+                            }
+
+                            @-webkit-keyframes fadeout {
+                                from {
+                                    top: 30px;
+                                    opacity: 1;
+                                }
+
+                                to {
+                                    top: 0;
+                                    opacity: 0;
+                                }
+                            }
+
+                            @keyframes fadeout {
+                                from {
+                                    top: 30px;
+                                    opacity: 1;
+                                }
+
+                                to {
+                                    top: 0;
+                                    opacity: 0;
+                                }
+                            }
+
+                            .ink-input {
+                                display: inline-block;
+                                height: 100%;
+                                margin-left: 16px;
+                                font-family: Roboto, RobotoDraft, Helvetica, Arial, sans-serif;
+                                font-size: 13.3333px;
+                            }
+                        </style>
+                        <div class="ink-toolbar">
+                            <div class="ink-toolbar-begin">
+                                <div class="ink-button-container"><button class="ink-button" aria-label="Terug"><svg
+                                            class="ink-back-icon ink-icon" height="24px" version="1.1"
+                                            viewBox="0 0 24 24" width="24px" xmlns="http://www.w3.org/2000/svg"
+                                            xmlns:xlink="http://www.w3.org/1999/xlink">
+                                            <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z">
+                                            </path>
+                                        </svg>
+                                        <div style="font-size: 8px; visibility: hidden;"></div>
+                                    </button></div>
+                                <div class="ink-button-container"><button class="ink-button"
+                                        aria-label="Selectietool"><svg class="ink-edit-icon ink-icon" height="24px"
+                                            version="1.1" viewBox="0 0 24 24" width="24px"
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            xmlns:xlink="http://www.w3.org/1999/xlink">
+                                            <path color="#4285f4" class="ink-icon-color"
+                                                d="M21,17 L18.42,17 L20.93,19.56 C20.75,20.25 20.2,20.82 19.52,21 L17,18.5 L17,21 L15,21 L15,15 L21,15 L21,17 L21,17 Z">
+                                            </path>
+                                            <path fill="#424242"
+                                                d="M19,7 L21,7 L21,9 L19,9 L19,7 L19,7 Z M21,5 L19,5 L19,3.08 C20.1,3.08 21,4 21,5 L21,5 Z M15,3 L17,3 L17,5 L15,5 L15,3 L15,3 Z M19,11 L21,11 L21,13 L19,13 L19,11 L19,11 Z M9,21 L7,21 L7,19 L9,19 L9,21 L9,21 Z M5,9 L3,9 L3,7 L5,7 L5,9 L5,9 Z M5,3.08 L5,5 L3,5 C3,4 4,3.08 5,3.08 L5,3.08 Z M5,17 L3,17 L3,15 L5,15 L5,17 L5,17 Z M9,5 L7,5 L7,3 L9,3 L9,5 L9,5 Z M13,5 L11,5 L11,3 L13,3 L13,5 L13,5 Z M13,21 L11,21 L11,19 L13,19 L13,21 L13,21 Z M5,13 L3,13 L3,11 L5,11 L5,13 L5,13 Z M5,21.08 C3.9,21.08 3,20 3,19 L5,19 L5,21.08 L5,21.08 Z">
+                                            </path>
+                                        </svg>
+                                        <div style="font-size: 8px; visibility: hidden;"></div>
+                                    </button></div>
+                                <div class="ink-button-container"><button class="ink-button" aria-label="Gumtool"><svg
+                                            class="ink-eraser-icon ink-icon" height="24px" version="1.1"
+                                            viewBox="0 0 24 24" width="24px" xmlns="http://www.w3.org/2000/svg"
+                                            xmlns:xlink="http://www.w3.org/1999/xlink">
+                                            <path fill="#424242"
+                                                d="M21.41,11.33 L13.04,20 L4.73,20 L2.58,17.86 C1.8,17.08 1.8,15.83 2.58,15.04 L13.62,3.58 C14.4,2.81 15.68,2.81 16.46,3.58 L21.41,8.51 C22.2,9.29 22.2,10.55 21.41,11.33 L21.41,11.33 Z">
+                                            </path>
+                                            <polygon color="#4285f4" class="ink-icon-color"
+                                                points="17.26 18 15.26 20 21.96 20 21.96 18"></polygon>
+                                        </svg>
+                                        <div style="font-size: 8px; visibility: hidden;"></div>
+                                    </button><button class="ink-button ink-dropdown"
+                                        aria-label="Optiemenu van gumtool openen"><svg class="ink-arrow-icon ink-icon"
+                                            fill="#000000" height="24px" width="18px" viewBox="0 0 24 24"
+                                            xmlns="http://www.w3.org/2000/svg">
+                                            <path d="M7 10l5 5 5-5z"></path>
+                                            <path d="M0 0h24v24H0z" fill="none"></path>
+                                        </svg></button></div>
+                                <div class="ink-button-container"><button class="ink-button"
+                                        aria-label="Kalligrafietool"><svg class="ink-pen-icon ink-icon" fill="none"
+                                            fill-rule="evenodd" height="24px" stroke="none" stroke-width="1"
+                                            version="1.1" viewBox="0 0 24 24" width="24px"
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            xmlns:xlink="http://www.w3.org/1999/xlink">
+                                            <polygon fill="#424242"
+                                                points="3 17.25 3 21 6.74 21 14.28 13.47 10.53 9.72"></polygon>
+                                            <path color="#000000" class="ink-icon-color"
+                                                d="M18.37,3.3 L20.71,5.63 C21.1,6.02 21.11,6.66 20.72,7.05 L15.35,12.41 L11.59,8.65 L14.12,6.12 L13.39,5.39 L7.73,11.05 L6.33,9.65 L12.7,3.29 C13.09,2.9 13.74,2.91 14.12,3.3 L15.54,4.71 L16.96,3.3 C17.34,2.91 17.98,2.91 18.37,3.3 L18.37,3.3 Z">
+                                            </path>
+                                            <path fill="#424242" class="ink-cap-border"
+                                                d="M17.7,4L20,6.3L15.4,11L13,8.6l1.8-1.8l0.7-0.7l-0.7-0.7l-0.2-0.2l0.2,0.2l0.7,0.7l0.7-0.7L17.7,4 M13.4,3 c-0.3,0-0.5,0.1-0.7,0.3L6.3,9.6l1.4,1.4l5.7-5.7l0.7,0.7l-2.5,2.5l3.8,3.8L20.7,7c0.4-0.4,0.4-1,0-1.4l-2.3-2.3 C18.2,3.1,17.9,3,17.7,3S17.2,3.1,17,3.3l-1.4,1.4l-1.4-1.4C13.9,3.1,13.7,3,13.4,3L13.4,3z">
+                                            </path>
+                                        </svg>
+                                        <div style="font-size: 8px; visibility: hidden;"></div>
+                                    </button><button class="ink-button ink-dropdown"
+                                        aria-label="Kleur- en diktekiezer van kalligrafietool openen"><svg
+                                            class="ink-arrow-icon ink-icon" fill="#000000" height="24px" width="18px"
+                                            viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                            <path d="M7 10l5 5 5-5z"></path>
+                                            <path d="M0 0h24v24H0z" fill="none"></path>
+                                        </svg></button></div>
+                                <div class="ink-button-container"><button class="ink-button"
+                                        aria-label="Markeertool"><svg class="ink-marker-icon ink-icon" fill="none"
+                                            fill-rule="evenodd" height="24px" stroke="none" stroke-width="1"
+                                            version="1.1" viewBox="0 0 24 24" width="24px"
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            xmlns:xlink="http://www.w3.org/1999/xlink">
+                                            <path fill="#424242"
+                                                d="M9.7,9.49 L13.99,13.79 L7.45,20.33 L6.73,19.61 L5.3,21.04 C4.51,21.83 3.23,21.83 2.44,21.04 C1.65,20.25 1.65,18.96 2.44,18.18 L3.87,16.75 L3.15,16.03 L9.7,9.49 L9.7,9.49 Z">
+                                            </path>
+                                            <path color="#ff5252" class="ink-icon-color"
+                                                d="M21.26,3.69 L19.8,2.22 C19.02,1.44 17.75,1.44 16.97,2.22 L10.76,8.43 L15.05,12.73 L21.26,6.52 C22.05,5.74 22.05,4.47 21.26,3.69 L21.26,3.69 Z">
+                                            </path>
+                                            <path fill="#424242" class="ink-cap-border"
+                                                d="M18.4,2.6c0.3,0,0.5,0.1,0.7,0.3l1.5,1.5c0.2,0.2,0.3,0.4,0.3,0.7s-0.1,0.5-0.3,0.7l-5.5,5.5l-2.9-2.9 l5.5-5.5C17.9,2.7,18.1,2.6,18.4,2.6 M18.4,1.6c-0.5,0-1,0.2-1.4,0.6l-6.2,6.2l4.3,4.3l6.2-6.2c0.8-0.8,0.8-2,0-2.8l-1.5-1.5 C19.4,1.8,18.9,1.6,18.4,1.6L18.4,1.6z">
+                                            </path>
+                                        </svg>
+                                        <div style="font-size: 8px; visibility: hidden;"></div>
+                                    </button><button class="ink-button ink-dropdown"
+                                        aria-label="Kleur- en diktekiezer van markeertool openen"><svg
+                                            class="ink-arrow-icon ink-icon" fill="#000000" height="24px" width="18px"
+                                            viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                            <path d="M7 10l5 5 5-5z"></path>
+                                            <path d="M0 0h24v24H0z" fill="none"></path>
+                                        </svg></button></div>
+                                <div class="ink-button-container ink-checked"><button class="ink-button"
+                                        aria-label="Highlighttool"><svg class="ink-highlighter-icon ink-icon"
+                                            fill="none" fill-rule="evenodd" height="24px" stroke="none" stroke-width="1"
+                                            version="1.1" viewBox="0 0 24 24" width="24px"
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            xmlns:xlink="http://www.w3.org/1999/xlink">
+                                            <path fill="#424242"
+                                                d="M10.22,9.49 L4.31,15.49 C3.54,16.29 3.61,17.54 4.39,18.34 L0.77,22 L6.45,22 L7.19,21.25 C7.97,22.06 9.14,22.11 9.92,21.3 L15.88,15.25 L10.22,9.49 L10.22,9.49 Z">
+                                            </path>
+                                            <path color="#ffbc00" class="ink-icon-color"
+                                                d="M22.68,5.49 L19.86,2.62 C19.08,1.82 17.79,1.78 17.02,2.58 L11.27,8.43 L16.93,14.18 L22.62,8.4 C23.39,7.59 23.45,6.29 22.68,5.49 L22.68,5.49 Z">
+                                            </path>
+                                            <path fill="#424242" class="ink-cap-border"
+                                                d="M18.4,3c0.3,0,0.5,0.1,0.7,0.3L22,6.2c0.4,0.4,0.4,1.1-0.1,1.5l-5,5.1l-4.3-4.3l5.1-5.2 C17.9,3.1,18.1,3,18.4,3 M18.4,2c-0.5,0-1,0.2-1.4,0.6l-5.8,5.9l5.7,5.8l5.7-5.8c0.8-0.8,0.8-2.1,0.1-2.9l-2.8-2.9 C19.5,2.2,18.9,2,18.4,2L18.4,2z">
+                                            </path>
+                                        </svg>
+                                        <div style="font-size: 8px; visibility: hidden;"></div>
+                                    </button><button class="ink-button ink-dropdown"
+                                        aria-label="Kleur- en diktekiezer van highlighttool openen"><svg
+                                            class="ink-arrow-icon ink-icon" fill="#000000" height="24px" width="18px"
+                                            viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                            <path d="M7 10l5 5 5-5z"></path>
+                                            <path d="M0 0h24v24H0z" fill="none"></path>
+                                        </svg></button></div>
+                                <div class="ink-button-container"><button class="ink-button"
+                                        aria-label="Rasteropties openen"><svg class="ink-icon" height="24px"
+                                            version="1.1" viewBox="0 0 24 24" width="24px"
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            xmlns:xlink="http://www.w3.org/1999/xlink">
+                                            <path d="M0 0h24v24H0z" fill="none"></path>
+                                            <path
+                                                d="M20 2H4c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM8 20H4v-4h4v4zm0-6H4v-4h4v4zm0-6H4V4h4v4zm6 12h-4v-4h4v4zm0-6h-4v-4h4v4zm0-6h-4V4h4v4zm6 12h-4v-4h4v4zm0-6h-4v-4h4v4zm0-6h-4V4h4v4z">
+                                            </path>
+                                        </svg>
+                                        <div style="font-size: 8px; visibility: hidden;"></div>
+                                    </button><button class="ink-button ink-dropdown"
+                                        aria-label="Rasteropties openen"><svg class="ink-arrow-icon ink-icon"
+                                            fill="#000000" height="24px" width="18px" viewBox="0 0 24 24"
+                                            xmlns="http://www.w3.org/2000/svg">
+                                            <path d="M7 10l5 5 5-5z"></path>
+                                            <path d="M0 0h24v24H0z" fill="none"></path>
+                                        </svg></button></div>
+                            </div>
+                            <div class="ink-toolbar-end">
+                                <div class="ink-button-container"><button class="ink-button"
+                                        aria-label="Ongedaan maken"><svg class="ink-undo-icon ink-icon" height="24px"
+                                            version="1.1" viewBox="0 0 24 24" width="24px"
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            xmlns:xlink="http://www.w3.org/1999/xlink">
+                                            <path
+                                                d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z">
+                                            </path>
+                                        </svg>
+                                        <div style="font-size: 8px; visibility: hidden;"></div>
+                                    </button></div>
+                                <div class="ink-button-container ink-disabled"><button class="ink-button"
+                                        aria-label="Opnieuw" disabled=""><svg class="ink-redo-icon ink-icon"
+                                            height="24px" version="1.1" viewBox="0 0 24 24" width="24px"
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            xmlns:xlink="http://www.w3.org/1999/xlink">
+                                            <path
+                                                d="M18.4 10.6C16.55 8.99 14.15 8 11.5 8c-4.65 0-8.58 3.03-9.96 7.22L3.9 16c1.05-3.19 4.05-5.5 7.6-5.5 1.95 0 3.73.72 5.12 1.88L13 16h9V7l-3.6 3.6z">
+                                            </path>
+                                        </svg>
+                                        <div style="font-size: 8px; visibility: hidden;"></div>
+                                    </button></div>
+                                <div class="ink-button-container ink-checked"><button class="ink-button"
+                                        aria-label="Volledig scherm"><svg class="ink-fullscreen-icon ink-icon"
+                                            height="24px" version="1.1" viewBox="0 0 24 24" width="24px"
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            xmlns:xlink="http://www.w3.org/1999/xlink">
+                                            <path class="ink-show-unchecked"
+                                                d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z">
+                                            </path>
+                                            <path class="ink-show-checked"
+                                                d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z">
+                                            </path>
+                                        </svg>
+                                        <div style="font-size: 8px; visibility: hidden;"></div>
+                                    </button></div>
+                                <div class="ink-button-container"><button class="ink-button"
+                                        aria-label="Meer opties"><svg class="ink-more-icon ink-icon" height="24px"
+                                            version="1.1" viewBox="0 0 24 24" width="24px"
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            xmlns:xlink="http://www.w3.org/1999/xlink">
+                                            <path
+                                                d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z">
+                                            </path>
+                                        </svg>
+                                        <div style="font-size: 8px; visibility: hidden;"></div>
+                                    </button></div>
+                            </div>
+                            <div id="ink-snackbar"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="ink-layer-container"
+                    style="cursor: -webkit-image-set(url(&quot;data:image/svg+xml;utf8,<svg xmlns=\&quot;http://www.w3.org/2000/svg\&quot; width=\&quot;10\&quot; height=\&quot;10\&quot; viewBox=\&quot;0 0 10 10\&quot;><circle cx=\&quot;5\&quot; cy=\&quot;5\&quot; r=\&quot;4\&quot; stroke=\&quot;rgb(0,0,0)\&quot; stroke-width=\&quot;1\&quot; fill=\&quot;rgb(255,188,0)\&quot;/></svg>&quot;) 1x, url(&quot;data:image/svg+xml;utf8,<svg xmlns=\&quot;http://www.w3.org/2000/svg\&quot; width=\&quot;20\&quot; height=\&quot;20\&quot; viewBox=\&quot;0 0 20 20\&quot;><circle cx=\&quot;10\&quot; cy=\&quot;10\&quot; r=\&quot;9\&quot; stroke=\&quot;rgb(0,0,0)\&quot; stroke-width=\&quot;1\&quot; fill=\&quot;rgb(255,188,0)\&quot;/></svg>&quot;) 2x) 5 5, auto;">
+                    <div class="nA1mMd-ge6pde-bF1uUb">
+                        <div class="Q0hgme-n5T17d-woLtV hJDwNd">
+                            <div class="aZ2wEe-pbTTYe v3pZbf">
+                                <div class="LkdAo-e9ayKc LK5yu">
+                                    <div class="LkdAo hj4D6d"></div>
+                                </div>
+                                <div class="pehrl-TpMipd">
+                                    <div class="LkdAo hj4D6d"></div>
+                                </div>
+                                <div class="LkdAo-e9ayKc qwU8Me">
+                                    <div class="LkdAo hj4D6d"></div>
+                                </div>
+                            </div>
+                            <div class="aZ2wEe-pbTTYe oq6NAc">
+                                <div class="LkdAo-e9ayKc LK5yu">
+                                    <div class="LkdAo hj4D6d"></div>
+                                </div>
+                                <div class="pehrl-TpMipd">
+                                    <div class="LkdAo hj4D6d"></div>
+                                </div>
+                                <div class="LkdAo-e9ayKc qwU8Me">
+                                    <div class="LkdAo hj4D6d"></div>
+                                </div>
+                            </div>
+                            <div class="aZ2wEe-pbTTYe gS7Ybc">
+                                <div class="LkdAo-e9ayKc LK5yu">
+                                    <div class="LkdAo hj4D6d"></div>
+                                </div>
+                                <div class="pehrl-TpMipd">
+                                    <div class="LkdAo hj4D6d"></div>
+                                </div>
+                                <div class="LkdAo-e9ayKc qwU8Me">
+                                    <div class="LkdAo hj4D6d"></div>
+                                </div>
+                            </div>
+                            <div class="aZ2wEe-pbTTYe nllRtd">
+                                <div class="LkdAo-e9ayKc LK5yu">
+                                    <div class="LkdAo hj4D6d"></div>
+                                </div>
+                                <div class="pehrl-TpMipd">
+                                    <div class="LkdAo hj4D6d"></div>
+                                </div>
+                                <div class="LkdAo-e9ayKc qwU8Me">
+                                    <div class="LkdAo hj4D6d"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="ink-emscripten-engine">
+                        <style>
+                            .ink-emscripten-engine {
+                                position: absolute;
+                                top: 0;
+                                left: 0;
+                                width: 100%;
+                                height: 100%;
+                                overflow: hidden;
+                            }
+
+                            .ink-engine {
+                                transform-origin: left top;
+                            }
+                        </style><canvas class="ink-engine" width="3840" height="1742"
+                            style="width: 1536px; height: 696.8px; left: 0px; top: 0px;"></canvas>
+                    </div>
+                    <div class="TGB85e-UzWXSb-bF1uUb" style="display: none;"></div>
+                </div>
+                <div class="below-ink-canvas">
+                    <div class="ink-menu ink-palette ink-palette-collapsed"
+                        style="display: none; visibility: visible; left: 68px;">
+                        <div class="ink-color-rows-container" style="height:200px;">
+                            <div class="ink-color-row"><button aria-label="Zwart" class="ink-color ink-selected"
+                                    color-data="#000000" style="background:#000000;" tabindex="0"></button><button
+                                    aria-label="Rood" class="ink-color" color-data="#ff5252" style="background:#ff5252;"
+                                    tabindex="0"></button><button aria-label="Geel" class="ink-color"
+                                    color-data="#ffbc00" style="background:#ffbc00;" tabindex="0"></button><button
+                                    aria-label="Groen" class="ink-color" color-data="#00c853"
+                                    style="background:#00c853;" tabindex="0"></button><button aria-label="Cyaan"
+                                    class="ink-color" color-data="#00b0ff" style="background:#00b0ff;"
+                                    tabindex="0"></button><button aria-label="Paars" class="ink-color"
+                                    color-data="#d500f9" style="background:#d500f9;" tabindex="0"></button><button
+                                    aria-label="Bruin" class="ink-color" color-data="#8d6e63"
+                                    style="background:#8d6e63;" tabindex="0"></button><button aria-label="More colors"
+                                    class="ink-expand"><svg class="ink-expand-icon" height="24px" version="1.1"
+                                        viewBox="0 0 24 24" width="24px" xmlns="http://www.w3.org/2000/svg"
+                                        xmlns:xlink="http://www.w3.org/1999/xlink">
+                                        <path d="M16.59 8.59L12 13.17 7.41 8.59 6 10l6 6 6-6z"></path>
+                                    </svg></button></div>
+                            <div class="ink-color-row"><button aria-label="Wit" class="ink-color" color-data="#fafafa"
+                                    style="background:#fafafa;" tabindex="0"></button><button aria-label="Karmozijnrood"
+                                    class="ink-color" color-data="#a52714" style="background:#a52714;"
+                                    tabindex="0"></button><button aria-label="Geelbruin" class="ink-color"
+                                    color-data="#ee8100" style="background:#ee8100;" tabindex="0"></button><button
+                                    aria-label="Avocadogroen" class="ink-color" color-data="#558b2f"
+                                    style="background:#558b2f;" tabindex="0"></button><button aria-label="Kobaltblauw"
+                                    class="ink-color" color-data="#01579b" style="background:#01579b;"
+                                    tabindex="0"></button><button aria-label="Dieppaars" class="ink-color"
+                                    color-data="#8e24aa" style="background:#8e24aa;" tabindex="0"></button><button
+                                    aria-label="Donkerbruin" class="ink-color" color-data="#4e342e"
+                                    style="background:#4e342e;" tabindex="0"></button></div>
+                            <div class="ink-color-row"><button aria-label="Donkergrijs" class="ink-color"
+                                    color-data="#90a4ae" style="background:#90a4ae;" tabindex="0"></button><button
+                                    aria-label="Felroze" class="ink-color" color-data="#ff4081"
+                                    style="background:#ff4081;" tabindex="0"></button><button aria-label="Oranje"
+                                    class="ink-color" color-data="#ff6e40" style="background:#ff6e40;"
+                                    tabindex="0"></button><button aria-label="Limoengroen" class="ink-color"
+                                    color-data="#aeea00" style="background:#aeea00;" tabindex="0"></button><button
+                                    aria-label="Blauw" class="ink-color" color-data="#304ffe"
+                                    style="background:#304ffe;" tabindex="0"></button><button aria-label="Violet"
+                                    class="ink-color" color-data="#7c4dff" style="background:#7c4dff;"
+                                    tabindex="0"></button><button aria-label="Blauwgroen" class="ink-color"
+                                    color-data="#1de9b6" style="background:#1de9b6;" tabindex="0"></button></div>
+                            <div class="ink-color-row"><button aria-label="Lichtgrijs" class="ink-color"
+                                    color-data="#cfd8dc" style="background:#cfd8dc;" tabindex="0"></button><button
+                                    aria-label="Lichtroze" class="ink-color" color-data="#f8bbd0"
+                                    style="background:#f8bbd0;" tabindex="0"></button><button aria-label="Lichtoranje"
+                                    class="ink-color" color-data="#ffccbc" style="background:#ffccbc;"
+                                    tabindex="0"></button><button aria-label="Lichtgroen" class="ink-color"
+                                    color-data="#f0f4c3" style="background:#f0f4c3;" tabindex="0"></button><button
+                                    aria-label="Lichtblauw" class="ink-color" color-data="#9fa8da"
+                                    style="background:#9fa8da;" tabindex="0"></button><button aria-label="Lavendel"
+                                    class="ink-color" color-data="#d1c4e9" style="background:#d1c4e9;"
+                                    tabindex="0"></button><button aria-label="Lichtblauwgroen" class="ink-color"
+                                    color-data="#b2dfdb" style="background:#b2dfdb;" tabindex="0"></button></div>
+                        </div>
+                        <div class="ink-size-row"><button aria-label="Dikte 1" class="ink-size" size-data="0.2379"
+                                tabindex="0">
+                                <div style="height:2px;width:2px;margin:0 15px;"></div>
+                            </button><button aria-label="Dikte 2" class="ink-size ink-selected" size-data="0.2931"
+                                tabindex="0">
+                                <div style="height:4px;width:4px;margin:0 14px;"></div>
+                            </button><button aria-label="Dikte 3" class="ink-size" size-data="0.4167" tabindex="0">
+                                <div style="height:8px;width:8px;margin:0 12px;"></div>
+                            </button><button aria-label="Dikte 4" class="ink-size" size-data="0.5657" tabindex="0">
+                                <div style="height:12px;width:12px;margin:0 10px;"></div>
+                            </button><button aria-label="Dikte 8" class="ink-size" size-data="0.7244" tabindex="0">
+                                <div style="height:16px;width:16px;margin:0 8px;"></div>
+                            </button><button aria-label="Dikte 12" class="ink-size" size-data="0.8878" tabindex="0">
+                                <div style="height:20px;width:20px;margin:0 6px;"></div>
+                            </button><button aria-label="Dikte 16" class="ink-size" size-data="1.0536" tabindex="0">
+                                <div style="height:24px;width:24px;margin:0 4px;"></div>
+                            </button><button aria-label="Dikte 20" class="ink-size" size-data="1.2209" tabindex="0">
+                                <div style="height:28px;width:28px;margin:0 2px;"></div>
+                            </button></div>
+                    </div>
+                    <div class="ink-menu ink-palette ink-palette-collapsed"
+                        style="display: none; visibility: visible; left: 142px;">
+                        <div class="ink-color-rows-container" style="height:200px;">
+                            <div class="ink-color-row"><button aria-label="Zwart" class="ink-color" color-data="#000000"
+                                    style="background:#000000;" tabindex="0"></button><button aria-label="Rood"
+                                    class="ink-color ink-selected" color-data="#ff5252" style="background:#ff5252;"
+                                    tabindex="0"></button><button aria-label="Geel" class="ink-color"
+                                    color-data="#ffbc00" style="background:#ffbc00;" tabindex="0"></button><button
+                                    aria-label="Groen" class="ink-color" color-data="#00c853"
+                                    style="background:#00c853;" tabindex="0"></button><button aria-label="Cyaan"
+                                    class="ink-color" color-data="#00b0ff" style="background:#00b0ff;"
+                                    tabindex="0"></button><button aria-label="Paars" class="ink-color"
+                                    color-data="#d500f9" style="background:#d500f9;" tabindex="0"></button><button
+                                    aria-label="Bruin" class="ink-color" color-data="#8d6e63"
+                                    style="background:#8d6e63;" tabindex="0"></button><button aria-label="More colors"
+                                    class="ink-expand"><svg class="ink-expand-icon" height="24px" version="1.1"
+                                        viewBox="0 0 24 24" width="24px" xmlns="http://www.w3.org/2000/svg"
+                                        xmlns:xlink="http://www.w3.org/1999/xlink">
+                                        <path d="M16.59 8.59L12 13.17 7.41 8.59 6 10l6 6 6-6z"></path>
+                                    </svg></button></div>
+                            <div class="ink-color-row"><button aria-label="Wit" class="ink-color" color-data="#fafafa"
+                                    style="background:#fafafa;" tabindex="0"></button><button aria-label="Karmozijnrood"
+                                    class="ink-color" color-data="#a52714" style="background:#a52714;"
+                                    tabindex="0"></button><button aria-label="Geelbruin" class="ink-color"
+                                    color-data="#ee8100" style="background:#ee8100;" tabindex="0"></button><button
+                                    aria-label="Avocadogroen" class="ink-color" color-data="#558b2f"
+                                    style="background:#558b2f;" tabindex="0"></button><button aria-label="Kobaltblauw"
+                                    class="ink-color" color-data="#01579b" style="background:#01579b;"
+                                    tabindex="0"></button><button aria-label="Dieppaars" class="ink-color"
+                                    color-data="#8e24aa" style="background:#8e24aa;" tabindex="0"></button><button
+                                    aria-label="Donkerbruin" class="ink-color" color-data="#4e342e"
+                                    style="background:#4e342e;" tabindex="0"></button></div>
+                            <div class="ink-color-row"><button aria-label="Donkergrijs" class="ink-color"
+                                    color-data="#90a4ae" style="background:#90a4ae;" tabindex="0"></button><button
+                                    aria-label="Felroze" class="ink-color" color-data="#ff4081"
+                                    style="background:#ff4081;" tabindex="0"></button><button aria-label="Oranje"
+                                    class="ink-color" color-data="#ff6e40" style="background:#ff6e40;"
+                                    tabindex="0"></button><button aria-label="Limoengroen" class="ink-color"
+                                    color-data="#aeea00" style="background:#aeea00;" tabindex="0"></button><button
+                                    aria-label="Blauw" class="ink-color" color-data="#304ffe"
+                                    style="background:#304ffe;" tabindex="0"></button><button aria-label="Violet"
+                                    class="ink-color" color-data="#7c4dff" style="background:#7c4dff;"
+                                    tabindex="0"></button><button aria-label="Blauwgroen" class="ink-color"
+                                    color-data="#1de9b6" style="background:#1de9b6;" tabindex="0"></button></div>
+                            <div class="ink-color-row"><button aria-label="Lichtgrijs" class="ink-color"
+                                    color-data="#cfd8dc" style="background:#cfd8dc;" tabindex="0"></button><button
+                                    aria-label="Lichtroze" class="ink-color" color-data="#f8bbd0"
+                                    style="background:#f8bbd0;" tabindex="0"></button><button aria-label="Lichtoranje"
+                                    class="ink-color" color-data="#ffccbc" style="background:#ffccbc;"
+                                    tabindex="0"></button><button aria-label="Lichtgroen" class="ink-color"
+                                    color-data="#f0f4c3" style="background:#f0f4c3;" tabindex="0"></button><button
+                                    aria-label="Lichtblauw" class="ink-color" color-data="#9fa8da"
+                                    style="background:#9fa8da;" tabindex="0"></button><button aria-label="Lavendel"
+                                    class="ink-color" color-data="#d1c4e9" style="background:#d1c4e9;"
+                                    tabindex="0"></button><button aria-label="Lichtblauwgroen" class="ink-color"
+                                    color-data="#b2dfdb" style="background:#b2dfdb;" tabindex="0"></button></div>
+                        </div>
+                        <div class="ink-size-row"><button aria-label="Dikte 1" class="ink-size" size-data="0.2379"
+                                tabindex="0">
+                                <div style="height:2px;width:2px;margin:0 15px;"></div>
+                            </button><button aria-label="Dikte 2" class="ink-size ink-selected" size-data="0.2931"
+                                tabindex="0">
+                                <div style="height:4px;width:4px;margin:0 14px;"></div>
+                            </button><button aria-label="Dikte 3" class="ink-size" size-data="0.4167" tabindex="0">
+                                <div style="height:8px;width:8px;margin:0 12px;"></div>
+                            </button><button aria-label="Dikte 4" class="ink-size" size-data="0.5657" tabindex="0">
+                                <div style="height:12px;width:12px;margin:0 10px;"></div>
+                            </button><button aria-label="Dikte 8" class="ink-size" size-data="0.7244" tabindex="0">
+                                <div style="height:16px;width:16px;margin:0 8px;"></div>
+                            </button><button aria-label="Dikte 12" class="ink-size" size-data="0.8878" tabindex="0">
+                                <div style="height:20px;width:20px;margin:0 6px;"></div>
+                            </button><button aria-label="Dikte 16" class="ink-size" size-data="1.0536" tabindex="0">
+                                <div style="height:24px;width:24px;margin:0 4px;"></div>
+                            </button><button aria-label="Dikte 20" class="ink-size" size-data="1.2209" tabindex="0">
+                                <div style="height:28px;width:28px;margin:0 2px;"></div>
+                            </button></div>
+                    </div>
+                    <div class="ink-menu ink-palette ink-palette-collapsed"
+                        style="display: none; visibility: visible; left: 216px;">
+                        <div class="ink-color-rows-container" style="height:200px;">
+                            <div class="ink-color-row"><button aria-label="Zwart" class="ink-color" color-data="#000000"
+                                    style="background:#000000;" tabindex="0"></button><button aria-label="Rood"
+                                    class="ink-color" color-data="#ff5252" style="background:#ff5252;"
+                                    tabindex="0"></button><button aria-label="Geel" class="ink-color ink-selected"
+                                    color-data="#ffbc00" style="background:#ffbc00;" tabindex="0"></button><button
+                                    aria-label="Groen" class="ink-color" color-data="#00c853"
+                                    style="background:#00c853;" tabindex="0"></button><button aria-label="Cyaan"
+                                    class="ink-color" color-data="#00b0ff" style="background:#00b0ff;"
+                                    tabindex="0"></button><button aria-label="Paars" class="ink-color"
+                                    color-data="#d500f9" style="background:#d500f9;" tabindex="0"></button><button
+                                    aria-label="Bruin" class="ink-color" color-data="#8d6e63"
+                                    style="background:#8d6e63;" tabindex="0"></button><button aria-label="More colors"
+                                    class="ink-expand"><svg class="ink-expand-icon" height="24px" version="1.1"
+                                        viewBox="0 0 24 24" width="24px" xmlns="http://www.w3.org/2000/svg"
+                                        xmlns:xlink="http://www.w3.org/1999/xlink">
+                                        <path d="M16.59 8.59L12 13.17 7.41 8.59 6 10l6 6 6-6z"></path>
+                                    </svg></button></div>
+                            <div class="ink-color-row"><button aria-label="Wit" class="ink-color" color-data="#fafafa"
+                                    style="background:#fafafa;" tabindex="0"></button><button aria-label="Karmozijnrood"
+                                    class="ink-color" color-data="#a52714" style="background:#a52714;"
+                                    tabindex="0"></button><button aria-label="Geelbruin" class="ink-color"
+                                    color-data="#ee8100" style="background:#ee8100;" tabindex="0"></button><button
+                                    aria-label="Avocadogroen" class="ink-color" color-data="#558b2f"
+                                    style="background:#558b2f;" tabindex="0"></button><button aria-label="Kobaltblauw"
+                                    class="ink-color" color-data="#01579b" style="background:#01579b;"
+                                    tabindex="0"></button><button aria-label="Dieppaars" class="ink-color"
+                                    color-data="#8e24aa" style="background:#8e24aa;" tabindex="0"></button><button
+                                    aria-label="Donkerbruin" class="ink-color" color-data="#4e342e"
+                                    style="background:#4e342e;" tabindex="0"></button></div>
+                            <div class="ink-color-row"><button aria-label="Donkergrijs" class="ink-color"
+                                    color-data="#90a4ae" style="background:#90a4ae;" tabindex="0"></button><button
+                                    aria-label="Felroze" class="ink-color" color-data="#ff4081"
+                                    style="background:#ff4081;" tabindex="0"></button><button aria-label="Oranje"
+                                    class="ink-color" color-data="#ff6e40" style="background:#ff6e40;"
+                                    tabindex="0"></button><button aria-label="Limoengroen" class="ink-color"
+                                    color-data="#aeea00" style="background:#aeea00;" tabindex="0"></button><button
+                                    aria-label="Blauw" class="ink-color" color-data="#304ffe"
+                                    style="background:#304ffe;" tabindex="0"></button><button aria-label="Violet"
+                                    class="ink-color" color-data="#7c4dff" style="background:#7c4dff;"
+                                    tabindex="0"></button><button aria-label="Blauwgroen" class="ink-color"
+                                    color-data="#1de9b6" style="background:#1de9b6;" tabindex="0"></button></div>
+                            <div class="ink-color-row"><button aria-label="Lichtgrijs" class="ink-color"
+                                    color-data="#cfd8dc" style="background:#cfd8dc;" tabindex="0"></button><button
+                                    aria-label="Lichtroze" class="ink-color" color-data="#f8bbd0"
+                                    style="background:#f8bbd0;" tabindex="0"></button><button aria-label="Lichtoranje"
+                                    class="ink-color" color-data="#ffccbc" style="background:#ffccbc;"
+                                    tabindex="0"></button><button aria-label="Lichtgroen" class="ink-color"
+                                    color-data="#f0f4c3" style="background:#f0f4c3;" tabindex="0"></button><button
+                                    aria-label="Lichtblauw" class="ink-color" color-data="#9fa8da"
+                                    style="background:#9fa8da;" tabindex="0"></button><button aria-label="Lavendel"
+                                    class="ink-color" color-data="#d1c4e9" style="background:#d1c4e9;"
+                                    tabindex="0"></button><button aria-label="Lichtblauwgroen" class="ink-color"
+                                    color-data="#b2dfdb" style="background:#b2dfdb;" tabindex="0"></button></div>
+                        </div>
+                        <div class="ink-size-row"><button aria-label="Dikte 1" class="ink-size" size-data="0.2379"
+                                tabindex="0">
+                                <div style="height:2px;width:2px;margin:0 15px;"></div>
+                            </button><button aria-label="Dikte 2" class="ink-size" size-data="0.2931" tabindex="0">
+                                <div style="height:4px;width:4px;margin:0 14px;"></div>
+                            </button><button aria-label="Dikte 3" class="ink-size" size-data="0.4167" tabindex="0">
+                                <div style="height:8px;width:8px;margin:0 12px;"></div>
+                            </button><button aria-label="Dikte 4" class="ink-size ink-selected" size-data="0.5657"
+                                tabindex="0">
+                                <div style="height:12px;width:12px;margin:0 10px;"></div>
+                            </button><button aria-label="Dikte 8" class="ink-size" size-data="0.7244" tabindex="0">
+                                <div style="height:16px;width:16px;margin:0 8px;"></div>
+                            </button><button aria-label="Dikte 12" class="ink-size" size-data="0.8878" tabindex="0">
+                                <div style="height:20px;width:20px;margin:0 6px;"></div>
+                            </button><button aria-label="Dikte 16" class="ink-size" size-data="1.0536" tabindex="0">
+                                <div style="height:24px;width:24px;margin:0 4px;"></div>
+                            </button><button aria-label="Dikte 20" class="ink-size" size-data="1.2209" tabindex="0">
+                                <div style="height:28px;width:28px;margin:0 2px;"></div>
+                            </button></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>var STATIC_JS_PREFIX = '.'</script>
+    <script src="ink-loader.js"></script>
+    <script src="ink_demo.js"></script>
+</body>
+
+</html>
